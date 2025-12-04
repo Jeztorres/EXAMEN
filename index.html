@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebXR AR Experience</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div id="overlay">
+        <div id="buttons-container">
+            <button id="btn-model-1" class="ar-button">Modelo Base</button>
+            <button id="btn-model-2" class="ar-button">Movimiento 2</button>
+            <button id="btn-model-3" class="ar-button">Movimiento 3</button>
+        </div>
+
+        <div id="info">
+            <h1>Modo WebXR</h1>
+            <p>1. Pulsa "START AR" abajo.</p>
+            <p>2. Toca el modelo para cambiarlo.</p>
+        </div>
+
+        <div id="ar-toast"></div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>
