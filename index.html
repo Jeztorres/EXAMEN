@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <title>WebXR AR - Modelo 3D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
+    
+    <!-- Mejoras para PWA y móviles -->
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Preconectar a CDNs para mejor rendimiento -->
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+
+    <!-- Import map para resolver módulos de Three.js -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.165.0/examples/jsm/"
+      }
+    }
+  </script>
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            /* Para que la pantalla siga recibiendo taps para AR */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 12px;
+            box-sizing: border-box;
+        }
+
+        #status {
+            pointer-events: none;
+            color: white;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+            font-size: 14px;
+            max-width: 90%;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 12px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Indicador de carga */
+        #loading-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            z-index: 1001;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #ffffff;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Controles de cámara */
+        #camera-controls {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Panel de información */
+        #info-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-family: monospace;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 100;
+            max-width: 250px;
+            display: none;
+        }
+
+        #info-panel div {
+            margin: 2px 0;
+        }
+
+        /* Mostrar panel en PC */
+        @media (min-width: 768px) {
+            #info-panel {
+                display: block;
+            }
+            
+            #camera-controls #controls-text {
+                display: none;
+            }
+        }
+
+        /* Modo AR activo */
+        .ar-mode #camera-controls {
+            display: none;
+        }
+
+        .ar-mode #ui {
+            justify-content: flex-end;
+        }
+
+        /* Estilos para pantallas muy pequeñas */
+        @media (max-width: 480px) {
+            #status {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+            
+            #buttons button {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+            
+            #camera-controls {
+                font-size: 10px;
+                padding: 6px 10px;
+            }
+        }
+
+        #buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            pointer-events: auto;
+            /* Los botones sí deben recibir clicks */
+        }
+
+        #buttons button {
+            flex: 1;
+            max-width: 120px;
+            border: none;
+            border-radius: 999px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        #buttons button:active {
+            transform: scale(0.96);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- UI superpuesta al AR -->
+    <div id="ui">
+        <div id="status">Modelos 3D cargados. Selecciona una rutina para ver la animación.</div>
+
+        <div id="buttons">
+            <button data-mode="1">Rutina 1</button>
+            <button data-mode="2">Rutina 2</button>
+            <button data-mode="3">Rutina 3</button>
+            <button id="ar-toggle" style="background: rgba(0, 150, 255, 0.8);">Modo AR</button>
+            <button id="debug-toggle" style="background: rgba(100, 100, 100, 0.7);">Debug</button>
+        </div>
+    </div>
+
+    <!-- Controles de cámara para modo web -->
+    <div id="camera-controls">
+        <div id="controls-text">Arrastra para rotar | Rueda para zoom | Click derecho para mover</div>
+    </div>
+    
+    <!-- Panel de información adicional -->
+    <div id="info-panel">
+        <div>🖱️ <strong>Controles de Cámara:</strong></div>
+        <div>• Clic izquierdo + arrastrar: Rotar</div>
+        <div>• Rueda del ratón: Zoom in/out</div>
+        <div>• Clic derecho + arrastrar: Mover</div>
+        <div>• Doble clic: Centrar vista</div>
+        <br>
+        <div>⌨️ <strong>Teclas de Acceso Rápido:</strong></div>
+        <div>• 1, 2, 3: Cambiar rutina</div>
+        <div>• R: Reiniciar cámara</div>
+        <div>• H: Mostrar/ocultar ayuda</div>
+        <br>
+        <div>📱 <strong>Modo AR:</strong></div>
+        <div>• Solo disponible en móviles</div>
+        <div>• Requiere Chrome + ARCore</div>
+    </div>
+
+    <!-- Indicador de carga -->
+    <div id="loading-indicator">
+        <div class="spinner"></div>
+        <div>Cargando modelos...</div>
+    </div>
+
+    <!-- Configuración -->
+    <script src="./config.js"></script>
+    
+    <!-- Lógica principal de WebXR -->
+    <script type="module" src="./src/main.js"></script>
+</body>
+
+</html>

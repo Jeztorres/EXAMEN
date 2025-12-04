@@ -1,0 +1,60 @@
+/* Estilos generales para el cuerpo y la escena */
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Contenedor de la Interfaz de Usuario (Overlay) */
+#overlay {
+    position: absolute;
+    z-index: 1000;
+    bottom: 30px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    pointer-events: none;
+    /* Permite que los toques pasen a la escena 3D excepto en los botones */
+}
+
+/* Estilos de los botones AR */
+.btn-ar {
+    pointer-events: auto;
+    /* Reactiva los clicks en los botones */
+    background: rgba(255, 255, 255, 0.2);
+    /* Fondo semitransparente (Glassmorphism) */
+    backdrop-filter: blur(10px);
+    /* Efecto de desenfoque */
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 25px;
+    padding: 12px 24px;
+    color: white;
+    font-weight: 600;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-ar:hover {
+    background: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-ar:active {
+    background: rgba(255, 255, 255, 0.6);
+    transform: translateY(0);
+    color: #333;
+}
+
+/* Ajuste para el botón de 'Enter AR' nativo de A-Frame/WebXR */
+.a-enter-vr-button {
+    bottom: 80px !important;
+    /* Lo subimos un poco para que no estorbe con nuestros botones */
+}
