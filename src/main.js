@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 
@@ -75,7 +76,13 @@ function toggleDebug() {
     log(`Debug logs ${debugVisible ? 'mostrados' : 'ocultos'}`);
 }
 
+// Configurar loaders con compresión Draco
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+dracoLoader.setDecoderConfig({ type: 'js' });
+
 const loader = new GLTFLoader();
+loader.setDRACOLoader(dracoLoader);
 
 // Usar configuración externa (con fallback)
 const MODELS = (window.CONFIG && window.CONFIG.MODELS) || {

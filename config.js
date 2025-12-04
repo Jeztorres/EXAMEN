@@ -27,7 +27,7 @@ const CONFIG = {
         }
     },
     
-    // Rutas de modelos (fácil de modificar)
+    // Rutas de modelos (fácil de modificar) - Usando versiones comprimidas con Draco
     MODELS: {
         1: './assets/models/modelo-final.glb',
         2: './assets/models/movimiento2.glb',
