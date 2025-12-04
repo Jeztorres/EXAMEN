@@ -76,13 +76,17 @@ function toggleDebug() {
     log(`Debug logs ${debugVisible ? 'mostrados' : 'ocultos'}`);
 }
 
-// Configurar loaders con compresión Draco
+// Configurar loaders con compresión Draco y fallback
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
 dracoLoader.setDecoderConfig({ type: 'js' });
 
+// Loader principal con Draco
 const loader = new GLTFLoader();
 loader.setDRACOLoader(dracoLoader);
+
+// Loader de fallback sin Draco para GitHub Pages
+const fallbackLoader = new GLTFLoader();
 
 // Usar configuración externa (con fallback)
 const MODELS = (window.CONFIG && window.CONFIG.MODELS) || {
@@ -842,6 +846,7 @@ async function loadModelForCurrentMode(position, quaternion, scale) {
 
     loadingModels[currentMode] = true;
     statusEl.textContent = `Cargando rutina ${currentMode}...`;
+    statusEl.className = 'loading';
 
     try {
         let gltf;
@@ -879,11 +884,13 @@ async function loadModelForCurrentMode(position, quaternion, scale) {
         }
 
         statusEl.textContent = `Rutina ${currentMode} activa.`;
+        statusEl.className = '';
         log(`Rutina ${currentMode} cargada exitosamente`);
         
     } catch (error) {
         log(`ERROR cargando modelo ${currentMode}: ${error.message}`);
-        statusEl.textContent = `Error cargando rutina ${currentMode}. ${error.message}`;
+        statusEl.textContent = `Error cargando rutina ${currentMode}: ${error.message}`;
+        statusEl.className = 'error';
         
         // Mostrar información de red si es posible
         if (navigator.connection) {
@@ -895,17 +902,19 @@ async function loadModelForCurrentMode(position, quaternion, scale) {
     }
 }
 
-// Cargar modelo con timeout
+// Cargar modelo con timeout y fallback para GitHub Pages
 function loadModelWithTimeout(url, timeout = 30000) {
     return new Promise((resolve, reject) => {
         const timeoutId = setTimeout(() => {
             reject(new Error('Timeout: La carga del modelo tardó demasiado'));
         }, timeout);
 
+        // Intentar carga con Draco primero
         loader.load(
             url,
             (gltf) => {
                 clearTimeout(timeoutId);
+                log(`Modelo cargado exitosamente con Draco: ${url}`);
                 resolve(gltf);
             },
             (progress) => {
@@ -916,8 +925,28 @@ function loadModelWithTimeout(url, timeout = 30000) {
                 }
             },
             (error) => {
-                clearTimeout(timeoutId);
-                reject(new Error(`Error de red o archivo: ${error.message || 'Desconocido'}`));
+                log(`Error con Draco, intentando fallback: ${error.message}`);
+                
+                // Fallback sin Draco para GitHub Pages
+                fallbackLoader.load(
+                    url,
+                    (gltf) => {
+                        clearTimeout(timeoutId);
+                        log(`Modelo cargado con fallback: ${url}`);
+                        resolve(gltf);
+                    },
+                    (progress) => {
+                        if (progress.total > 0) {
+                            const percent = Math.round((progress.loaded / progress.total) * 100);
+                            log(`Cargando (fallback): ${percent}%`);
+                            statusEl.textContent = `Cargando rutina ${currentMode} (fallback): ${percent}%`;
+                        }
+                    },
+                    (fallbackError) => {
+                        clearTimeout(timeoutId);
+                        reject(new Error(`Error en ambos loaders: Draco(${error.message}) Fallback(${fallbackError.message})`));
+                    }
+                );
             }
         );
     });
